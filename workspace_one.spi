@@ -1,0 +1,84 @@
+# Unstable piano arp.
+
+use_debug false
+set_link_bpm! 95
+set_mixer_control! lpf_slide: 16, lpf: 130
+
+live_loop :beat do
+  tick
+  puts "==== #{ look % 4 + 1 } / 4 ===="
+  if look % 4 == 0 then
+    cue :bar
+  end
+  sleep 1
+end
+
+live_loop :kick, sync: :bar do
+  ##| stop
+  4.times do
+    sample :bd_haus, amp: 1, cutoff: rrand(60, 80)
+    sleep 1
+    if one_in(3) then
+      2.times do
+        sample :bd_haus, amp: 1, cutoff: rrand(60, 80)
+        sleep 0.5
+      end
+    end
+  end
+end
+
+live_loop :hat, sync: :beat do
+  stop
+  pattern = (ring 0, 1, 1, 0, 1)
+  sample :hat_gem, amp: pattern.tick * rrand(0.1, 0.4), cutoff: rrand(110, 120)
+  sleep 0.25
+end
+
+live_loop :bass, sync: :bar do
+  ##| stop
+  use_synth :fm
+  use_synth_defaults release: 0.3
+  notes = [:A2, :E3, :Gs1, :A3, :Gs2]
+  use_octave 0
+  4.times do
+    play notes.tick, amp: 0.7, cutoff: rrand(60, 80)
+    sleep 0.25
+    play notes.choose, amp: 0.5, cutoff: rrand(60, 80)
+    sleep 0.25
+  end
+  sleep 0.25
+end
+
+live_loop :noise do
+  ##| stop
+  sample :perc_bell, rate: rrand(0.1, 0.8), amp: 0.4, cutoff: 80
+  sleep [1, 2.7, 8, 4].choose
+end
+
+live_loop :sauna, sync: :bar do
+  sleep 1
+  sample :ambi_sauna, cutoff: rrand(60, 100), attack: 0.5, amp: 0.4 if one_in(3)
+  sleep 8
+end
+
+live_loop :piano_arp do
+  ##| stop
+  use_synth :piano
+  use_synth_defaults hard: 0.3
+  notes = [:A3, :E4, :D4, :Ab5]
+  if one_in(2) then
+    use_octave -1
+  else
+    use_octave 0
+  end
+  
+  if one_in(3) then
+    notes = notes.shuffle
+  end
+  
+  4.times do |index|
+    play notes.tick, cutoff: rrand(50, 80), amp: rrand(0.2, 0.4), release: rrand(0.5, 2)
+    sleep 0.25 + rrand(0, 1)
+  end
+  sleep 10
+end

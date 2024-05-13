@@ -1,0 +1,108 @@
+# Sliced long chord.
+
+use_debug false
+set_link_bpm! 100
+set_mixer_control! lpf_slide: 16, lpf: 130
+
+live_loop :beat do
+  tick
+  puts "==== #{ look % 4 + 1 } / 4 ===="
+  if look % 4 == 0 then
+    cue :bar
+  end
+  sleep 1
+end
+
+live_loop :hat, sync: :bar do
+  ##| stop
+  pattern = (ring 1.5, 1, 0.2, 1, 1, 0.3, 1, 1, 1.5, 1, 0, 0, 1, 0, 0.5, 0.6)
+  synth :sc808_closed_hihat, amp: pattern.tick * 0.07
+  synth :sc808_open_hihat, amp: 0.5 if look % 13 == 0
+  sleep 0.25
+end
+
+live_loop :cymbal, sync: :bar do
+  sample :drum_cymbal_soft, amp: 0.9, rate: 0.1, cutoff: 110
+  sleep 16
+end
+
+live_loop :kick, sync: :bar do
+  ##| stop
+  pattern = (ring 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0)
+  synth :sc808_bassdrum, amp: pattern.tick * 1.4
+  sleep 0.25
+end
+
+live_loop :snare, sync: :bar do
+  pattern = (ring 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0)
+  with_fx :reverb, room: 1, mix: 0.7 do |r|
+    control r, room: rrand(0, 1)
+    synth :sc808_clap, amp: pattern.tick * 3
+  end
+  sleep 0.25
+end
+
+live_loop :glitch, sync: :bar do
+  ##| stop
+  sleep 1
+  sample :glitch_perc4, amp: 0.8, rate: 0.25, hpf: 80
+  sleep 7
+end
+
+live_loop :chord, sync: :bar do
+  ##| stop
+  time_warp -0.25 do
+    with_fx :slicer, phase: 0.5, mix: 0.5, phase_slide: 3 do |r|
+      with_fx :bitcrusher do
+        control r, phase: rrand(0.4, 0.6)
+        use_synth :rodeo
+        c = one_in(2) ? chord(:D3, :major7) : chord(:D3, :add9)
+        play c, cutoff: rrand(80, 90), release: 9, amp: 0.9
+        sleep 2
+        control r, phase: rrand(0.002, 0.1)
+      end
+    end
+  end
+  sleep 16
+end
+
+live_loop :melody, sync: :bar do
+  ##| stop
+  with_fx :reverb, room: 1 do
+    lag = rrand(0, 0.3)
+    use_synth :piano
+    use_synth_defaults hard: 0.5
+    notes = (ring :E4, :A3, :Cs4, :Fs4)
+    sleep lag
+    ##| notes = notes.shuffle if one_in(6)
+    use_octave one_in(4) ? 0 : 1
+    play notes.tick, amp: rrand(0.4, 0.5), hard: rrand(0.4, 0.5), sustain: 1;
+    sleep 2 - lag
+  end
+end
+
+live_loop :bass, sync: :bar do
+  ##| stop
+  notes = (chord :D2, :major7)
+  use_synth :fm
+  
+  6.times do |i|
+    play notes.choose, amp: 0.6, release: 0.25, cutoff: rrand(60, 80)
+    sleep 0.25
+  end
+  sleep 6.5
+end
+
+live_loop :drone_bass, sync: :bar do
+  stop
+  sleep 0.5
+  use_synth :fm
+  use_octave one_in(3) ? 1 : 0
+  play :D2, amp: 0.2, sustain: 10, release: 4, attack: 0.8, cutoff: rrand(80, 90)
+  sleep 15.5
+end
+
+live_loop :amb, sync: :bar do
+  sample :ambi_lunar_land, amp: 0.5, rate: 0.5, cutoff: rrand(80, 100) if one_in(2)
+  sleep 7
+end
